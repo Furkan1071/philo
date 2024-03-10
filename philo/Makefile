@@ -1,5 +1,5 @@
 NAME	=	philo
-SRC		=	arg_control.c philosophers.c started.c
+SRC		=	arg_control.c main.c
 OBJS 	= 	$(SRC:.c=.o)
 CC 		= 	gcc
 CFLAGS 	= 	-Wall -Wextra -Werror

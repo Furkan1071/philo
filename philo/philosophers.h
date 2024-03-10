@@ -6,7 +6,7 @@
 /*   By: fekiz <fekiz@student.42istanbul.com.tr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/02/20 18:08:35 by fekiz             #+#    #+#             */
-/*   Updated: 2024/03/07 19:11:54 by fekiz            ###   ########.fr       */
+/*   Updated: 2024/03/10 21:25:07 by fekiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@
 
 typedef struct philos
 {
-	int				i;
+	int				id;
 	int				last_eat;
 	bool			is_dead;
 	pthread_t		thread;
@@ -31,23 +31,30 @@ typedef struct philos
 
 typedef struct s_list
 {
-	long			number_philo;
 	long			time_to_die;
 	long			time_to_eat;
 	long			time_to_sleep;
 	long			start_time;
+	long			ms;
+	int				number_philo;
+	int				cont;
 	int				max_eat;
 	int				must_eat;
 	int				eat_count;
 	t_philo			*philos;
+	struct timeval	tv;
 	pthread_mutex_t	*forks;
-	pthread_mutex_t	eaten;
+	pthread_mutex_t	is_eat;
 	pthread_mutex_t	mutex_dead;
 }	t_list;
 
-int		ft_atoi(char *str);
-int		num_control(char **str, t_list *data);
+long	ft_atoi(char *str);
+long	get_ms(t_list *data, bool ok, bool eat_pause);
 int		data_creat(char **str, t_list *data);
-long	get_ms(unsigned long start_time);
+int		num_control(char **str, t_list *data);
+void	*life(void *philo);
+void	writes(t_philo *p, int num);
+void	main_thread(t_list *data);
+void	ms_sleep(t_philo *p, long time);
 
 #endif

@@ -6,13 +6,13 @@
 /*   By: fekiz <fekiz@student.42istanbul.com.tr>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/02/20 18:08:08 by fekiz             #+#    #+#             */
-/*   Updated: 2024/03/07 19:11:29 by fekiz            ###   ########.fr       */
+/*   Updated: 2024/03/10 21:23:43 by fekiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philosophers.h"
 
-int	ft_atoi(char *str)
+long	ft_atoi(char *str)
 {
 	long	num;
 	long	sign;
@@ -39,27 +39,55 @@ int	ft_atoi(char *str)
 	return (sign * num);
 }
 
-long	get_ms(unsigned long start_time)
+long	get_ms(t_list *data, bool ok, bool eat_pause)
 {
-	static struct timeval	tv;
+	long	t;
+	int		i;
 
-	gettimeofday(&tv, NULL);
-	return ((tv.tv_usec / 1000 + tv.tv_sec * 1000) - start_time);
+	t = data->start_time;
+	if (ok == true)
+	{
+		i = -1;
+		while (++i < data->number_philo)
+		{
+			data->philos[i].id = i;
+			data->philos[i].data = data;
+			data->philos[i].is_dead = false;
+			data->philos[i].last_eat = get_ms(data, false, false);
+			pthread_mutex_init(&data->forks[i], NULL);
+			if (pthread_create(&data->philos[i].thread, NULL,
+					life, &data->philos[i]) != 0)
+				return (1);
+			usleep(100);
+		}
+		return (0);
+	}
+	if (eat_pause == true)
+		usleep(1000 * data->time_to_eat);
+	gettimeofday(&data->tv, NULL);
+	return ((data->tv.tv_usec / 1000 + data->tv.tv_sec * 1000) - t);
 }
 
 int	data_creat(char **str, t_list *data)
 {
-	data->number_philo = ft_atoi(str[1]);
+	data->number_philo = (int)ft_atoi(str[1]);
 	data->time_to_die = ft_atoi(str[2]);
 	data->time_to_eat = ft_atoi(str[3]);
 	data->time_to_sleep = ft_atoi(str[4]);
-	data->start_time = get_ms(data->start_time);
+	gettimeofday(&data->tv, NULL);
+	data->start_time = (data->tv.tv_usec / 1000 + data->tv.tv_sec * 1000);
 	data->eat_count = 0;
 	data->must_eat = -1;
 	if (str[5])
 		data->must_eat = ft_atoi(str[5]);
-	if (pthread_mutex_init(&data->eaten, NULL) != 0
+	if (pthread_mutex_init(&data->is_eat, NULL) != 0
 		|| pthread_mutex_init(&data->mutex_dead, NULL) != 0)
+		return (1);
+	data->philos = malloc(sizeof(t_philo) * data->number_philo);
+	data->forks = malloc(sizeof(pthread_mutex_t) * data->number_philo);
+	if (!(data->philos) || !(data->forks))
+		return (1);
+	if (get_ms(data, true, false) == 1)
 		return (1);
 	return (0);
 }
@@ -88,4 +116,31 @@ int	num_control(char **str, t_list *data)
 	if (data_creat(str, data) == 1)
 		return (1);
 	return (0);
+}
+
+void	*life(void *philo)
+{
+	t_philo	*p;
+
+	p = (t_philo *)philo;
+	while (1)
+	{
+		pthread_mutex_init(&p->data->forks[p->id], NULL);
+		writes(p, 0);
+		pthread_mutex_init(&p->data->forks[(p->id + 1)
+			% p->data->number_philo], NULL);
+		writes(p, 0);
+		writes(p, 3);
+		pthread_mutex_init(&p->data->is_eat, NULL);
+		p->data->eat_count++;
+		p->last_eat = get_ms(p->data, false, true);
+		printf("%lu %d is sleeping\n", get_ms(p->data, false, false), p->id);
+		pthread_mutex_unlock(&p->data->is_eat);
+		pthread_mutex_unlock(&p->data->forks[p->id]);
+		pthread_mutex_unlock(&p->data->forks[(p->id + 1)
+			% p->data->number_philo]);
+		usleep(p->data->time_to_sleep * 1000);
+		writes(p, 2);
+	}
+	return (NULL);
 }
